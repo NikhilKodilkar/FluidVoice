@@ -15,6 +15,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     private var updateCheckTimer: Timer?
     private var didRevealMainWindowOnLaunch = false
     private var didRequestMainWindowReopen = false
+    private var shouldSuppressNextReopenActivation = false
     private var wasLaunchedAsLoginItem = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -74,6 +75,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if self.shouldSuppressNextReopenActivation {
+            self.shouldSuppressNextReopenActivation = false
+            return true
+        }
+
         // Ensure dock-icon reopen always foregrounds FluidVoice.
         sender.activate(ignoringOtherApps: true)
 
@@ -184,6 +190,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDele
 
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = activate
+        if !activate {
+            self.shouldSuppressNextReopenActivation = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+                self?.shouldSuppressNextReopenActivation = false
+            }
+        }
 
         DebugLogger.shared.info("Requesting LaunchServices reopen to create SwiftUI main window", source: "AppDelegate")
         NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { _, error in
