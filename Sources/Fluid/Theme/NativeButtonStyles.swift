@@ -12,6 +12,36 @@ enum FluidInteractionVisuals {
     }
 }
 
+enum FluidButtonRole {
+    case primary
+    case secondary
+    case glass
+    case compact
+    case accent
+    case inline
+}
+
+enum FluidButtonSize: Equatable {
+    case small
+    case medium
+    case large
+
+    var controlHeight: CGFloat {
+        switch self {
+        case .small:
+            return 32
+        case .medium:
+            return 36
+        case .large:
+            return 44
+        }
+    }
+
+    var accentCompact: Bool {
+        self == .small
+    }
+}
+
 extension View {
     func fluidControlSurface(
         isSelected: Bool,
@@ -25,6 +55,28 @@ extension View {
             tone: tone,
             cornerRadius: cornerRadius
         ))
+    }
+
+    @ViewBuilder
+    func fluidButton(
+        _ role: FluidButtonRole,
+        size: FluidButtonSize = .medium,
+        isRecording: Bool = false
+    ) -> some View {
+        switch role {
+        case .primary:
+            self.buttonStyle(PremiumButtonStyle(isRecording: isRecording, height: size.controlHeight))
+        case .secondary:
+            self.buttonStyle(SecondaryButtonStyle(height: size.controlHeight))
+        case .glass:
+            self.buttonStyle(GlassButtonStyle(height: size.controlHeight))
+        case .compact:
+            self.buttonStyle(CompactButtonStyle(height: size.controlHeight))
+        case .accent:
+            self.buttonStyle(AccentButtonStyle(compact: size.accentCompact))
+        case .inline:
+            self.buttonStyle(InlineButtonStyle())
+        }
     }
 }
 
@@ -201,14 +253,17 @@ struct PremiumButtonStyle: ButtonStyle {
 // MARK: - Secondary Button
 
 struct SecondaryButtonStyle: ButtonStyle {
+    var height: CGFloat = 42
+
     func makeBody(configuration: Configuration) -> some View {
-        SecondaryButton(configuration: configuration)
+        SecondaryButton(configuration: configuration, height: self.height)
     }
 
     private struct SecondaryButton: View {
         @Environment(\.theme) private var theme
         @State private var isHovered = false
         let configuration: ButtonStyle.Configuration
+        let height: CGFloat
 
         private var shape: RoundedRectangle {
             RoundedRectangle(cornerRadius: self.theme.metrics.corners.lg, style: .continuous)
@@ -218,7 +273,7 @@ struct SecondaryButtonStyle: ButtonStyle {
             self.configuration.label
                 .fontWeight(.semibold)
                 .frame(maxWidth: .infinity)
-                .frame(height: 42)
+                .frame(height: self.height)
                 .foregroundStyle(self.theme.palette.primaryText)
                 .background(self.theme.materials.card, in: self.shape)
                 .background(
@@ -251,13 +306,15 @@ struct CompactButtonStyle: ButtonStyle {
     var isReady: Bool = false
     var foreground: Color? = nil
     var borderColor: Color? = nil
+    var height: CGFloat = 34
 
     func makeBody(configuration: Configuration) -> some View {
         CompactButton(
             configuration: configuration,
             isReady: self.isReady,
             foreground: self.foreground,
-            borderColor: self.borderColor
+            borderColor: self.borderColor,
+            height: self.height
         )
     }
 
@@ -268,6 +325,7 @@ struct CompactButtonStyle: ButtonStyle {
         let isReady: Bool
         let foreground: Color?
         let borderColor: Color?
+        let height: CGFloat
 
         private var shape: RoundedRectangle {
             RoundedRectangle(cornerRadius: self.theme.metrics.corners.sm, style: .continuous)
@@ -280,7 +338,7 @@ struct CompactButtonStyle: ButtonStyle {
             self.configuration.label
                 .fontWeight(.medium)
                 .padding(.horizontal, self.theme.metrics.spacing.md)
-                .frame(height: 34)
+                .frame(height: self.height)
                 .foregroundStyle(foregroundColor)
                 .background(self.theme.materials.card, in: self.shape)
                 .background(
