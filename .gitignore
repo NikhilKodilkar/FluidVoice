@@ -223,3 +223,6 @@ sample/
 .codex
 AGENTS.md
 builds/
+
+# Local xcodebuild derived data
+.build-dd/
